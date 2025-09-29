@@ -278,7 +278,17 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-gray-800">
         <div className="max-w-6xl mx-auto text-center">
-          <p className="text-gray-400">© 2024 ResumeAI. All rights reserved.</p>
+          <p className="text-gray-400">
+            © 2024 ResumeAI. All rights reserved. | 
+            <a 
+              href="https://linkedin.com/in/ibraheem-uthman" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-white transition-colors ml-1"
+            >
+              Ibraheem Uthman
+            </a>
+          </p>
         </div>
       </footer>
     </div>
