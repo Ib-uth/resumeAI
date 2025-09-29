@@ -100,7 +100,36 @@ export default function BuilderPage() {
   );
 }
 
-// Resume Data Type
+// Resume Data Types
+interface Experience {
+  id: string;
+  title: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+interface Education {
+  id: string;
+  degree: string;
+  school: string;
+  year: string;
+}
+
+interface Skill {
+  id: string;
+  name: string;
+  level: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+}
+
 interface ResumeData {
   personalInfo: {
     name: string;
@@ -111,10 +140,10 @@ interface ResumeData {
     website: string;
   };
   summary: string;
-  experience: any[];
-  education: any[];
-  skills: any[];
-  projects: any[];
+  experience: Experience[];
+  education: Education[];
+  skills: Skill[];
+  projects: Project[];
 }
 
 // Details Tab Component
