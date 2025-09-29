@@ -7,6 +7,8 @@ const groq = new Groq({
 
 export async function POST(request: NextRequest) {
   try {
+    const { content, type } = await request.json();
+
     // Check if API key is properly configured
     if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY === 'dummy-key-for-build') {
       console.error('GROQ_API_KEY not configured');
@@ -15,8 +17,6 @@ export async function POST(request: NextRequest) {
         enhancedContent: content // Return original content as fallback
       }, { status: 500 });
     }
-
-    const { content, type } = await request.json();
 
     if (!content || !type) {
       return NextResponse.json({ error: 'Content and type are required' }, { status: 400 });
