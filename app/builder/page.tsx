@@ -3,9 +3,55 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+// Resume Data Types
+interface Experience {
+  id: string;
+  title: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+interface Education {
+  id: string;
+  degree: string;
+  school: string;
+  year: string;
+}
+
+interface Skill {
+  id: string;
+  name: string;
+  level: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+}
+
+interface ResumeData {
+  personalInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin: string;
+    website: string;
+  };
+  summary: string;
+  experience: Experience[];
+  education: Education[];
+  skills: Skill[];
+  projects: Project[];
+}
+
 export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState('details');
-  const [resumeData, setResumeData] = useState({
+  const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       name: '',
       email: '',
@@ -100,52 +146,6 @@ export default function BuilderPage() {
   );
 }
 
-// Resume Data Types
-interface Experience {
-  id: string;
-  title: string;
-  company: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
-
-interface Education {
-  id: string;
-  degree: string;
-  school: string;
-  year: string;
-}
-
-interface Skill {
-  id: string;
-  name: string;
-  level: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  technologies: string[];
-}
-
-interface ResumeData {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
-    linkedin: string;
-    website: string;
-  };
-  summary: string;
-  experience: Experience[];
-  education: Education[];
-  skills: Skill[];
-  projects: Project[];
-}
-
 // Details Tab Component
 function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void }) {
   const updatePersonalInfo = (field: string, value: string) => {
@@ -167,23 +167,23 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
           Personal Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Full Name"
+                <input 
+                  type="text" 
+                  placeholder="Full Name" 
             value={resumeData.personalInfo.name}
             onChange={(e) => updatePersonalInfo('name', e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-          />
-          <input
-            type="email"
-            placeholder="Email"
+                />
+                <input 
+                  type="email" 
+                  placeholder="Email" 
             value={resumeData.personalInfo.email}
             onChange={(e) => updatePersonalInfo('email', e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-          />
-          <input
-            type="tel"
-            placeholder="Phone"
+                />
+                <input 
+                  type="tel" 
+                  placeholder="Phone" 
             value={resumeData.personalInfo.phone}
             onChange={(e) => updatePersonalInfo('phone', e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
@@ -194,9 +194,9 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
             value={resumeData.personalInfo.location}
             onChange={(e) => updatePersonalInfo('location', e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-          />
-        </div>
-      </div>
+                />
+              </div>
+            </div>
             
       {/* Professional Summary */}
       <div className="bg-gray-900 p-6 rounded-lg">
