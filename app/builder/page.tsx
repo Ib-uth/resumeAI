@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Modal from '../../components/Modal';
 
 // Resume Data Types
 interface Experience {
@@ -39,6 +40,7 @@ interface ResumeData {
     email: string;
     phone: string;
     location: string;
+    address: string;
     linkedin: string;
     website: string;
   };
@@ -52,12 +54,19 @@ interface ResumeData {
 export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState('details');
   const [selectedTemplate, setSelectedTemplate] = useState('modern');
+  const [modal, setModal] = useState<{ isOpen: boolean; type: 'success' | 'error' | 'info'; title: string; message: string }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       name: '',
       email: '',
       phone: '',
       location: '',
+      address: '',
       linkedin: '',
       website: ''
     },
@@ -148,7 +157,7 @@ export default function BuilderPage() {
           {/* Left Panel - Form */}
           <div className="space-y-8">
             {activeTab === 'details' && (
-              <DetailsTab resumeData={resumeData} setResumeData={setResumeData} />
+              <DetailsTab resumeData={resumeData} setResumeData={setResumeData} setModal={setModal} />
             )}
             {activeTab === 'templates' && (
               <TemplatesTab selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} />
@@ -167,13 +176,32 @@ export default function BuilderPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        type={modal.type}
+      >
+        <p className="text-gray-600">{modal.message}</p>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => setModal({ ...modal, isOpen: false })}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            OK
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
 
 // Details Tab Component
-function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void }) {
+function DetailsTab({ resumeData, setResumeData, setModal }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void, setModal: (modal: any) => void }) {
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
 
   const updatePersonalInfo = (field: string, value: string) => {
     setResumeData({
@@ -192,9 +220,67 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
     });
   };
 
+  const addSkill = () => {
+    if (newSkill.trim()) {
+      const skill: Skill = {
+        id: Date.now().toString(),
+        name: newSkill.trim(),
+        level: 'Intermediate'
+      };
+      setResumeData({
+        ...resumeData,
+        skills: [...resumeData.skills, skill]
+      });
+      setNewSkill('');
+    }
+  };
+
+  const removeSkill = (skillId: string) => {
+    setResumeData({
+      ...resumeData,
+      skills: resumeData.skills.filter(skill => skill.id !== skillId)
+    });
+  };
+
+  const addExperience = () => {
+    const experience: Experience = {
+      id: Date.now().toString(),
+      title: '',
+      company: '',
+      startDate: '',
+      endDate: '',
+      description: ''
+    };
+    setResumeData({
+      ...resumeData,
+      experience: [...resumeData.experience, experience]
+    });
+  };
+
+  const updateExperience = (experienceId: string, field: string, value: string) => {
+    setResumeData({
+      ...resumeData,
+      experience: resumeData.experience.map(exp => 
+        exp.id === experienceId ? { ...exp, [field]: value } : exp
+      )
+    });
+  };
+
+  const removeExperience = (experienceId: string) => {
+    setResumeData({
+      ...resumeData,
+      experience: resumeData.experience.filter(exp => exp.id !== experienceId)
+    });
+  };
+
   const enhanceWithAI = async (type: 'summary' | 'experience' | 'achievement', content: string) => {
     if (!content.trim()) {
-      alert('Please enter some content to enhance.');
+      setModal({
+        isOpen: true,
+        type: 'error',
+        title: 'No Content',
+        message: 'Please enter some content to enhance.'
+      });
       return;
     }
 
@@ -218,14 +304,29 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
         if (type === 'summary') {
           updateSummary(enhancedContent);
         }
-        // Handle other types as needed
+        setModal({
+          isOpen: true,
+          type: 'success',
+          title: 'AI Enhancement Complete',
+          message: 'Your content has been successfully enhanced with AI!'
+        });
       } else {
         console.error('AI enhancement failed:', data.error);
-        alert(`AI enhancement failed: ${data.error || 'Unknown error'}`);
+        setModal({
+          isOpen: true,
+          type: 'error',
+          title: 'AI Enhancement Failed',
+          message: data.error || 'Unknown error occurred. Please try again.'
+        });
       }
     } catch (error) {
       console.error('AI enhancement failed:', error);
-      alert('AI enhancement failed. Please try again.');
+      setModal({
+        isOpen: true,
+        type: 'error',
+        title: 'AI Enhancement Failed',
+        message: 'Network error occurred. Please check your connection and try again.'
+      });
     } finally {
       setIsEnhancing(false);
     }
@@ -269,9 +370,16 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
             value={resumeData.personalInfo.location}
             onChange={(e) => updatePersonalInfo('location', e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
+          />
+          <input
+            type="text"
+            placeholder="Address"
+            value={resumeData.personalInfo.address}
+            onChange={(e) => updatePersonalInfo('address', e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+          />
+        </div>
+      </div>
             
       {/* Professional Summary */}
       <div className="bg-gray-900 p-6 rounded-lg">
@@ -310,43 +418,72 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
           Work Experience
         </h3>
         <div className="space-y-4">
-          <div className="border border-gray-700 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input
-                type="text"
-                placeholder="Job Title"
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+          {resumeData.experience.map((exp) => (
+            <div key={exp.id} className="border border-gray-700 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-4">
+                <h4 className="text-lg font-medium">Work Experience</h4>
+                <button
+                  onClick={() => removeExperience(exp.id)}
+                  className="text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Job Title"
+                  value={exp.title}
+                  onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Company"
+                  value={exp.company}
+                  onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Start Date"
+                  value={exp.startDate}
+                  onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="End Date"
+                  value={exp.endDate}
+                  onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+              <textarea
+                placeholder="Describe your achievements and responsibilities..."
+                rows={3}
+                value={exp.description}
+                onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
               />
-              <input
-                type="text"
-                placeholder="Company"
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-              />
+              <div className="flex justify-end mt-4">
+                <button 
+                  onClick={() => enhanceWithAI('experience', exp.description)}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
+                >
+                  AI Enhance
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <input
-                type="text"
-                placeholder="Start Date"
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-              />
-              <input
-                type="text"
-                placeholder="End Date"
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-              />
-            </div>
-            <textarea
-              placeholder="Describe your achievements and responsibilities..."
-              rows={3}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
-            />
-            <div className="flex justify-end mt-4">
-              <button className="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors">
-                AI Enhance
-              </button>
-            </div>
-          </div>
-          <button className="w-full border-2 border-dashed border-gray-600 rounded-lg py-4 text-gray-400 hover:text-white hover:border-gray-500 transition-colors">
+          ))}
+          <button 
+            onClick={addExperience}
+            className="w-full border-2 border-dashed border-gray-600 rounded-lg py-4 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+          >
             + Add Experience
           </button>
         </div>
@@ -364,13 +501,38 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
             AI Suggest
           </button>
         </h3>
-        <div className="flex flex-wrap gap-2">
-          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">JavaScript</span>
-          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">React</span>
-          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">Node.js</span>
-          <button className="border border-gray-600 rounded-full px-3 py-1 text-sm text-gray-400 hover:text-white hover:border-gray-500 transition-colors">
-            + Add Skill
-          </button>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {resumeData.skills.map((skill) => (
+              <div key={skill.id} className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-full text-sm">
+                <span>{skill.name}</span>
+                <button
+                  onClick={() => removeSkill(skill.id)}
+                  className="ml-2 hover:text-red-200 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Add a skill..."
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addSkill()}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
+            />
+            <button
+              onClick={addSkill}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Add
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -658,35 +820,40 @@ function ResumePreview({ data, template = 'modern' }: { data: ResumeData, templa
               </div>
             )}
             
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Experience</h2>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold">Senior Software Engineer</h3>
-                      <p className="text-gray-600">Tech Company Inc.</p>
+            {data.experience.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Experience</h2>
+                <div className="space-y-3">
+                  {data.experience.map((exp) => (
+                    <div key={exp.id}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{exp.title || 'Job Title'}</h3>
+                          <p className="text-gray-600">{exp.company || 'Company'}</p>
+                        </div>
+                        <span className="text-gray-600">{exp.startDate} - {exp.endDate}</span>
+                      </div>
+                      {exp.description && (
+                        <p className="mt-2 text-gray-700 text-sm">{exp.description}</p>
+                      )}
                     </div>
-                    <span className="text-gray-600">2020 - Present</span>
-                  </div>
-                  <ul className="mt-2 text-gray-700 space-y-1">
-                    <li>• Led development of microservices architecture</li>
-                    <li>• Improved system performance by 40%</li>
-                    <li>• Mentored junior developers</li>
-                  </ul>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
             
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">JavaScript</span>
-                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">React</span>
-                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Node.js</span>
-                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Python</span>
+            {data.skills.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Skills</h2>
+                <div className="flex flex-wrap gap-2">
+                  {data.skills.map((skill) => (
+                    <span key={skill.id} className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">
+                      {skill.name}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
     }

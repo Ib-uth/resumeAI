@@ -48,7 +48,12 @@ export async function POST(request: NextRequest) {
 
     const enhancedContent = completion.choices[0]?.message?.content || content;
 
-    return NextResponse.json({ enhancedContent });
+    console.log('AI enhancement successful:', { originalLength: content.length, enhancedLength: enhancedContent.length });
+
+    return NextResponse.json({ 
+      enhancedContent,
+      success: true 
+    });
   } catch (error) {
     console.error('AI enhancement error:', error);
     return NextResponse.json({ error: 'Failed to enhance content' }, { status: 500 });
