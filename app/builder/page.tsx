@@ -51,6 +51,7 @@ interface ResumeData {
 
 export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState('details');
+  const [selectedTemplate, setSelectedTemplate] = useState('modern');
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       name: '',
@@ -150,7 +151,7 @@ export default function BuilderPage() {
               <DetailsTab resumeData={resumeData} setResumeData={setResumeData} />
             )}
             {activeTab === 'templates' && (
-              <TemplatesTab />
+              <TemplatesTab selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} />
             )}
             {activeTab === 'export' && (
               <ExportTab />
@@ -161,7 +162,7 @@ export default function BuilderPage() {
           <div className="lg:sticky lg:top-8 lg:h-fit">
             <div className="bg-white text-black p-8 rounded-lg shadow-2xl">
               <h3 className="text-xl font-semibold mb-6 text-center">Live Preview</h3>
-              <ResumePreview data={resumeData} />
+              <ResumePreview data={resumeData} template={selectedTemplate} />
             </div>
           </div>
         </div>
@@ -180,6 +181,38 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
         [field]: value
       }
     });
+  };
+
+  const updateSummary = (value: string) => {
+    setResumeData({
+      ...resumeData,
+      summary: value
+    });
+  };
+
+  const enhanceWithAI = async (type: 'summary' | 'experience' | 'achievement', content: string) => {
+    try {
+      const response = await fetch('/api/ai/enhance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content,
+          type
+        }),
+      });
+
+      if (response.ok) {
+        const { enhancedContent } = await response.json();
+        if (type === 'summary') {
+          updateSummary(enhancedContent);
+        }
+        // Handle other types as needed
+      }
+    } catch (error) {
+      console.error('AI enhancement failed:', error);
+    }
   };
 
   return (
@@ -231,13 +264,18 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Professional Summary
-          <button className="ml-auto text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors">
+          <button 
+            onClick={() => enhanceWithAI('summary', resumeData.summary)}
+            className="ml-auto text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
+          >
             AI Enhance
           </button>
         </h3>
         <textarea
           placeholder="Write a compelling professional summary..."
           rows={4}
+          value={resumeData.summary}
+          onChange={(e) => updateSummary(e.target.value)}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-white focus:outline-none transition-colors"
         />
       </div>
@@ -319,14 +357,12 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
 }
 
 // Templates Tab Component
-function TemplatesTab() {
+function TemplatesTab({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: string, setSelectedTemplate: (template: string) => void }) {
   const templates = [
-    { id: 1, name: 'Modern Professional', category: 'Professional', preview: 'Modern clean design' },
-    { id: 2, name: 'Creative Portfolio', category: 'Creative', preview: 'Bold and artistic' },
-    { id: 3, name: 'Executive Suite', category: 'Executive', preview: 'Luxury and prestige' },
-    { id: 4, name: 'Tech Innovator', category: 'Technology', preview: 'Cutting-edge design' },
-    { id: 5, name: 'Minimalist', category: 'Minimal', preview: 'Clean and simple' },
-    { id: 6, name: 'Corporate Classic', category: 'Corporate', preview: 'Traditional and reliable' }
+    { id: 'modern', name: 'Modern Professional', category: 'Professional', preview: 'Modern clean design' },
+    { id: 'creative', name: 'Creative Portfolio', category: 'Creative', preview: 'Bold and artistic' },
+    { id: 'executive', name: 'Executive Suite', category: 'Executive', preview: 'Luxury and prestige' },
+    { id: 'minimal', name: 'Minimalist', category: 'Minimal', preview: 'Clean and simple' }
   ];
 
   return (
@@ -336,11 +372,19 @@ function TemplatesTab() {
         <p className="text-gray-400">Select from our curated collection of award-winning designs</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {templates.map((template) => (
-          <div key={template.id} className="bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition-colors cursor-pointer group">
+          <div 
+            key={template.id} 
+            className={`rounded-lg overflow-hidden transition-all cursor-pointer group border-2 ${
+              selectedTemplate === template.id 
+                ? 'border-blue-500 bg-blue-900/20' 
+                : 'border-gray-700 bg-gray-900 hover:bg-gray-800'
+            }`}
+            onClick={() => setSelectedTemplate(template.id)}
+          >
             <div className="aspect-[3/4] bg-white flex items-center justify-center">
-              <div className="text-center text-black">
+              <div className="text-center text-black p-4">
                 <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-4"></div>
                 <p className="text-sm font-medium">{template.name}</p>
                 <p className="text-xs text-gray-500">{template.category}</p>
@@ -349,8 +393,14 @@ function TemplatesTab() {
             <div className="p-4">
               <h4 className="font-semibold mb-1">{template.name}</h4>
               <p className="text-sm text-gray-400 mb-3">{template.preview}</p>
-              <button className="w-full bg-white text-black py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors">
-                Use Template
+              <button 
+                className={`w-full py-2 rounded-lg font-medium transition-colors ${
+                  selectedTemplate === template.id
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-white text-black hover:bg-gray-100'
+                }`}
+              >
+                {selectedTemplate === template.id ? 'Selected' : 'Use Template'}
               </button>
             </div>
           </div>
@@ -415,55 +465,211 @@ function ExportTab() {
 }
 
 // Resume Preview Component
-function ResumePreview({ data }: { data: ResumeData }) {
-  return (
-    <div className="space-y-6 text-sm">
-      <div className="text-center border-b border-gray-300 pb-4">
-        <h1 className="text-2xl font-bold">{data.personalInfo.name || 'Your Name'}</h1>
-        <p className="text-gray-600">Software Engineer</p>
-        <p className="text-gray-600">
-          {data.personalInfo.email || 'your@email.com'} • {data.personalInfo.phone || '(555) 123-4567'}
-        </p>
-      </div>
-      
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Professional Summary</h2>
-        <p className="text-gray-700 leading-relaxed">
-          Experienced software engineer with 5+ years of expertise in full-stack development, 
-          specializing in React, Node.js, and cloud technologies. Proven track record of delivering 
-          scalable solutions and leading cross-functional teams.
-        </p>
-      </div>
-      
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Experience</h2>
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold">Senior Software Engineer</h3>
-                <p className="text-gray-600">Tech Company Inc.</p>
-              </div>
-              <span className="text-gray-600">2020 - Present</span>
+function ResumePreview({ data, template = 'modern' }: { data: ResumeData, template?: string }) {
+  const renderTemplate = () => {
+    switch (template) {
+      case 'creative':
+        return (
+          <div className="space-y-6 text-sm">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-blue-600 mb-2">{data.personalInfo.name || 'Your Name'}</h1>
+              <div className="w-20 h-1 bg-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 text-lg">Software Engineer</p>
+              <p className="text-gray-600">
+                {data.personalInfo.email || 'your@email.com'} • {data.personalInfo.phone || '(555) 123-4567'}
+              </p>
             </div>
-            <ul className="mt-2 text-gray-700 space-y-1">
-              <li>• Led development of microservices architecture</li>
-              <li>• Improved system performance by 40%</li>
-              <li>• Mentored junior developers</li>
-            </ul>
+            
+            {data.summary && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h2 className="text-lg font-semibold mb-2 text-blue-800">Professional Summary</h2>
+                <p className="text-gray-700 leading-relaxed">{data.summary}</p>
+              </div>
+            )}
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-2 text-blue-600">Experience</h2>
+              <div className="space-y-3">
+                <div className="border-l-4 border-blue-600 pl-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">Senior Software Engineer</h3>
+                      <p className="text-gray-600">Tech Company Inc.</p>
+                    </div>
+                    <span className="text-gray-600">2020 - Present</span>
+                  </div>
+                  <ul className="mt-2 text-gray-700 space-y-1">
+                    <li>• Led development of microservices architecture</li>
+                    <li>• Improved system performance by 40%</li>
+                    <li>• Mentored junior developers</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-2 text-blue-600">Skills</h2>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">JavaScript</span>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">React</span>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">Node.js</span>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">Python</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
       
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Skills</h2>
-        <div className="flex flex-wrap gap-2">
-          <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">JavaScript</span>
-          <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">React</span>
-          <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Node.js</span>
-          <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Python</span>
-        </div>
-      </div>
-    </div>
-  );
+      case 'executive':
+        return (
+          <div className="space-y-6 text-sm">
+            <div className="text-center border-b-2 border-gray-300 pb-6">
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">{data.personalInfo.name || 'Your Name'}</h1>
+              <p className="text-gray-600 text-xl">Software Engineer</p>
+              <p className="text-gray-600">
+                {data.personalInfo.email || 'your@email.com'} • {data.personalInfo.phone || '(555) 123-4567'}
+              </p>
+            </div>
+            
+            {data.summary && (
+              <div>
+                <h2 className="text-xl font-semibold mb-3 text-gray-800 uppercase tracking-wide">Executive Summary</h2>
+                <p className="text-gray-700 leading-relaxed text-base">{data.summary}</p>
+              </div>
+            )}
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-3 text-gray-800 uppercase tracking-wide">Professional Experience</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">Senior Software Engineer</h3>
+                      <p className="text-gray-600 font-medium">Tech Company Inc.</p>
+                    </div>
+                    <span className="text-gray-600 font-medium">2020 - Present</span>
+                  </div>
+                  <ul className="mt-2 text-gray-700 space-y-1">
+                    <li>• Led development of microservices architecture</li>
+                    <li>• Improved system performance by 40%</li>
+                    <li>• Mentored junior developers</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold mb-3 text-gray-800 uppercase tracking-wide">Core Competencies</h2>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-800 text-white px-3 py-1 rounded text-xs">JavaScript</span>
+                <span className="bg-gray-800 text-white px-3 py-1 rounded text-xs">React</span>
+                <span className="bg-gray-800 text-white px-3 py-1 rounded text-xs">Node.js</span>
+                <span className="bg-gray-800 text-white px-3 py-1 rounded text-xs">Python</span>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'minimal':
+        return (
+          <div className="space-y-6 text-sm">
+            <div className="text-center">
+              <h1 className="text-2xl font-light text-gray-800 mb-1">{data.personalInfo.name || 'Your Name'}</h1>
+              <p className="text-gray-500">Software Engineer</p>
+              <p className="text-gray-500 text-xs">
+                {data.personalInfo.email || 'your@email.com'} • {data.personalInfo.phone || '(555) 123-4567'}
+              </p>
+            </div>
+            
+            {data.summary && (
+              <div>
+                <h2 className="text-sm font-medium mb-2 text-gray-800 uppercase tracking-wider">Summary</h2>
+                <p className="text-gray-600 leading-relaxed text-xs">{data.summary}</p>
+              </div>
+            )}
+            
+            <div>
+              <h2 className="text-sm font-medium mb-2 text-gray-800 uppercase tracking-wider">Experience</h2>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-sm">Senior Software Engineer</h3>
+                      <p className="text-gray-500 text-xs">Tech Company Inc.</p>
+                    </div>
+                    <span className="text-gray-500 text-xs">2020 - Present</span>
+                  </div>
+                  <ul className="mt-1 text-gray-600 space-y-0.5 text-xs">
+                    <li>• Led development of microservices architecture</li>
+                    <li>• Improved system performance by 40%</li>
+                    <li>• Mentored junior developers</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-sm font-medium mb-2 text-gray-800 uppercase tracking-wider">Skills</h2>
+              <div className="flex flex-wrap gap-1">
+                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">JavaScript</span>
+                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">React</span>
+                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">Node.js</span>
+                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">Python</span>
+              </div>
+            </div>
+          </div>
+        );
+      
+      default: // modern
+        return (
+          <div className="space-y-6 text-sm">
+            <div className="text-center border-b border-gray-300 pb-4">
+              <h1 className="text-2xl font-bold">{data.personalInfo.name || 'Your Name'}</h1>
+              <p className="text-gray-600">Software Engineer</p>
+              <p className="text-gray-600">
+                {data.personalInfo.email || 'your@email.com'} • {data.personalInfo.phone || '(555) 123-4567'}
+              </p>
+            </div>
+            
+            {data.summary && (
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Professional Summary</h2>
+                <p className="text-gray-700 leading-relaxed">{data.summary}</p>
+              </div>
+            )}
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Experience</h2>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">Senior Software Engineer</h3>
+                      <p className="text-gray-600">Tech Company Inc.</p>
+                    </div>
+                    <span className="text-gray-600">2020 - Present</span>
+                  </div>
+                  <ul className="mt-2 text-gray-700 space-y-1">
+                    <li>• Led development of microservices architecture</li>
+                    <li>• Improved system performance by 40%</li>
+                    <li>• Mentored junior developers</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Skills</h2>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">JavaScript</span>
+                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">React</span>
+                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Node.js</span>
+                <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Python</span>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return renderTemplate();
 }
