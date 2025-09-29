@@ -199,7 +199,7 @@ export default function BuilderPage() {
 }
 
 // Details Tab Component
-function DetailsTab({ resumeData, setResumeData, setModal }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void, setModal: (modal: any) => void }) {
+function DetailsTab({ resumeData, setResumeData, setModal }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void, setModal: (modal: { isOpen: boolean; type: 'success' | 'error' | 'info'; title: string; message: string }) => void }) {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [newSkill, setNewSkill] = useState('');
 
