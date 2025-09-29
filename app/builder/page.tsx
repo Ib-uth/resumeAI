@@ -173,6 +173,8 @@ export default function BuilderPage() {
 
 // Details Tab Component
 function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, setResumeData: (data: ResumeData) => void }) {
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
   const updatePersonalInfo = (field: string, value: string) => {
     setResumeData({
       ...resumeData,
@@ -191,6 +193,12 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
   };
 
   const enhanceWithAI = async (type: 'summary' | 'experience' | 'achievement', content: string) => {
+    if (!content.trim()) {
+      alert('Please enter some content to enhance.');
+      return;
+    }
+
+    setIsEnhancing(true);
     try {
       const response = await fetch('/api/ai/enhance', {
         method: 'POST',
@@ -203,15 +211,23 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const { enhancedContent } = await response.json();
+        const { enhancedContent } = data;
         if (type === 'summary') {
           updateSummary(enhancedContent);
         }
         // Handle other types as needed
+      } else {
+        console.error('AI enhancement failed:', data.error);
+        alert(`AI enhancement failed: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('AI enhancement failed:', error);
+      alert('AI enhancement failed. Please try again.');
+    } finally {
+      setIsEnhancing(false);
     }
   };
 
@@ -266,9 +282,14 @@ function DetailsTab({ resumeData, setResumeData }: { resumeData: ResumeData, set
           Professional Summary
           <button 
             onClick={() => enhanceWithAI('summary', resumeData.summary)}
-            className="ml-auto text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
+            disabled={isEnhancing}
+            className={`ml-auto text-sm px-3 py-1 rounded transition-colors ${
+              isEnhancing 
+                ? 'bg-gray-600 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            AI Enhance
+            {isEnhancing ? 'Enhancing...' : 'AI Enhance'}
           </button>
         </h3>
         <textarea

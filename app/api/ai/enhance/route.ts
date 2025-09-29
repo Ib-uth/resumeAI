@@ -7,8 +7,13 @@ const groq = new Groq({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if API key is properly configured
     if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY === 'dummy-key-for-build') {
-      return NextResponse.json({ error: 'GROQ_API_KEY not configured' }, { status: 500 });
+      console.error('GROQ_API_KEY not configured');
+      return NextResponse.json({ 
+        error: 'AI service not configured. Please contact support.', 
+        enhancedContent: content // Return original content as fallback
+      }, { status: 500 });
     }
 
     const { content, type } = await request.json();
@@ -16,6 +21,8 @@ export async function POST(request: NextRequest) {
     if (!content || !type) {
       return NextResponse.json({ error: 'Content and type are required' }, { status: 400 });
     }
+
+    console.log('Enhancing content:', { type, contentLength: content.length });
 
     const prompts = {
       summary: `Enhance this professional summary to be more compelling and ATS-friendly. Keep it concise but impactful: "${content}"`,
